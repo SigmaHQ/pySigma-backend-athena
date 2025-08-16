@@ -1,18 +1,24 @@
 from sigma.pipelines.base import Pipeline
 from sigma.processing.conditions import LogsourceCondition
-from sigma.processing.pipeline import ProcessingItem, ProcessingPipeline, SigmaRule, Transformation
+from sigma.processing.pipeline import ProcessingItem, ProcessingPipeline, SigmaRule, PreprocessingTransformation
 from dataclasses import dataclass, field
 from typing import Dict
 
 @dataclass
-class SetStateFromBackendOptionsTransformation(Transformation):
+class SetStateFromBackendOptionsTransformation(PreprocessingTransformation):
     key: str
     template: str
     default_values: Dict[str, str] = field(default_factory=dict)
 
-    def apply(self, pipeline: "sigma.processing.pipeline.Proces", rule: SigmaRule) -> None:
-        super().apply(pipeline, rule)
-        values = self.default_values | pipeline.vars
+    def apply(self, rule: SigmaRule) -> None:
+        # Call base (no pipeline arg)
+        super().apply(rule)
+
+        # Use the pipeline injected by PySigma
+        pipeline = self._pipeline
+
+        # Merge defaults with backend options/vars
+        values = {**self.default_values, **pipeline.vars}
         try:
             pipeline.state[self.key] = self.template.format_map(values)
         except KeyError as e:
@@ -25,8 +31,12 @@ class SetStateFromBackendOptionsTransformation(Transformation):
 
 @dataclass
 class SetStateFromBackendOptionsTransformationDashToUnderscore(SetStateFromBackendOptionsTransformation):
-    def apply(self, pipeline: "sigma.processing.pipeline.Proces", rule: SigmaRule) -> None:
-        super().apply(pipeline, rule)
+    def apply(self, rule: SigmaRule) -> None:
+        # First, compute the value via the parent
+        super().apply(rule)
+
+        # Then normalise dashes to underscores
+        pipeline = self._pipeline
         pipeline.state[self.key] = pipeline.state[self.key].replace("-", "_")
 
 @Pipeline
@@ -44,16 +54,18 @@ def athena_pipeline_security_lake_table_name() -> ProcessingPipeline:
 
     return ProcessingPipeline(
         name="athena map source to table name pipeline",
-        allowed_backends=frozenset(["athena"]), # Set of identifiers of backends (from the backends mapping) that are allowed to use this processing pipeline. This can be used by frontends like Sigma CLI to warn the user about inappropriate usage.
+        allowed_backends=frozenset(["athena"]),
         priority=20,
-        items=[ ProcessingItem(
-            identifier=f"table_{name}",
-            transformation=SetStateFromBackendOptionsTransformationDashToUnderscore(
-                key="table_name",
-                template=name,
-                default_values={"backend_aws_table_version": "2_0"}
-            ),
-            rule_conditions=[condition],
-        ) for condition, name in sources ],
+        items=[
+            ProcessingItem(
+                identifier=f"table_{name}",
+                transformation=SetStateFromBackendOptionsTransformationDashToUnderscore(
+                    key="table_name",
+                    template=name,
+                    default_values={"backend_aws_table_version": "2_0"},
+                ),
+                rule_conditions=[condition],
+            )
+            for condition, name in sources
+        ],
     )
-
