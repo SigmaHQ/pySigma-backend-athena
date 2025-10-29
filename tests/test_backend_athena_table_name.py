@@ -3,10 +3,9 @@ from sigma.collection import SigmaCollection
 
 from sigma.backends.athena import athenaBackend
 
+
 def test_setting_table_directly():
-    athena_backend = athenaBackend(
-        table="table_set_directly_on_backend"
-    )
+    athena_backend = athenaBackend(table="table_set_directly_on_backend")
     assert (
         athena_backend.convert(
             SigmaCollection.from_yaml(

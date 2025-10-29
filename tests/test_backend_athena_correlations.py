@@ -39,6 +39,7 @@ correlation:
         """SELECT * FROM event_counts WHERE correlation_event_count >= 10"""
     ]
 
+
 def test_event_count_correlation_multi_rule_stats_query(athena_backend: athenaBackend):
     correlation_rule = SigmaCollection.from_yaml(
         """

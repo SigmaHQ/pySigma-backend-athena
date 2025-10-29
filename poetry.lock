@@ -547,20 +547,24 @@ name = "pysigma"
 version = "1.0.0rc2"
 description = "Sigma rule processing and conversion tools"
 optional = false
-python-versions = "<4.0,>=3.9"
+python-versions = "^3.9"
 groups = ["main"]
-files = [
-    {file = "pysigma-1.0.0rc2-py3-none-any.whl", hash = "sha256:e0fc28c5d9da3ccc4411a1e5d78884c2612e38fb2f234122ae7d9e78e918d370"},
-    {file = "pysigma-1.0.0rc2.tar.gz", hash = "sha256:6b9fe06216769463db15fa674a99ee1e9337a1a33fa97af1ccb6c74cfd751443"},
-]
+files = []
+develop = false
 
 [package.dependencies]
-jinja2 = ">=3.1.6,<4.0.0"
-packaging = ">=25.0,<26.0"
-pyparsing = ">=3.2,<4.0"
-pyyaml = ">=6.0,<7.0"
-requests = ">=2.32,<3.0"
-types-pyyaml = ">=6.0.12.20240917,<7.0.0.0"
+jinja2 = "^3.1.6"
+packaging = "^25.0"
+pyparsing = "^3.2"
+pyyaml = "^6.0"
+requests = "^2.32"
+types-pyyaml = "^6.0.12.20240917"
+
+[package.source]
+type = "git"
+url = "https://github.com/SigmaHQ/pySigma.git"
+reference = "main"
+resolved_reference = "9965642dada190a5f6b95c9bc7d371c10906a61a"
 
 [[package]]
 name = "pytest"
@@ -780,4 +784,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "f1f4e1a06277071551c3619988c15c48901724e4819bbddc4196b79c40120ceb"
+content-hash = "1339a102454207838b15fa111911448cfe7f6c789a1523504a64e285fa0916dd"

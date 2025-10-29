@@ -2,8 +2,8 @@ import pytest
 from sigma.collection import SigmaCollection
 
 from sigma.backends.athena import athenaBackend
-
 from sigma.pipelines.athena import athena_pipeline_security_lake_table_name
+
 
 @pytest.fixture
 def athena_backend():
@@ -12,6 +12,7 @@ def athena_backend():
         processing_pipeline=pipeline,
         aws_table_region="eu-west-2",
     )
+
 
 def test_table_name_cloudtrail(athena_backend):
 
@@ -37,6 +38,7 @@ def test_table_name_cloudtrail(athena_backend):
         ]
     )
 
+
 def test_table_name_cloudtrail_s3(athena_backend):
 
     assert (
@@ -60,6 +62,7 @@ def test_table_name_cloudtrail_s3(athena_backend):
             """SELECT * FROM amazon_security_lake_table_eu_west_2_s3_data_2_0 WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'valueb'"""
         ]
     )
+
 
 def test_table_name_cloudtrail_lambda(athena_backend):
 
@@ -85,6 +88,7 @@ def test_table_name_cloudtrail_lambda(athena_backend):
         ]
     )
 
+
 def test_table_name_route53(athena_backend):
 
     assert (
@@ -108,6 +112,7 @@ def test_table_name_route53(athena_backend):
             """SELECT * FROM amazon_security_lake_table_eu_west_2_route53_2_0 WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'valueb'"""
         ]
     )
+
 
 def test_table_name_security_hub(athena_backend):
 
@@ -133,6 +138,7 @@ def test_table_name_security_hub(athena_backend):
         ]
     )
 
+
 def test_table_name_vpc_flow_logs(athena_backend):
 
     assert (
@@ -156,6 +162,7 @@ def test_table_name_vpc_flow_logs(athena_backend):
             """SELECT * FROM amazon_security_lake_table_eu_west_2_vpc_flow_2_0 WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'valueb'"""
         ]
     )
+
 
 def test_table_name_waf(athena_backend):
 
@@ -181,6 +188,7 @@ def test_table_name_waf(athena_backend):
         ]
     )
 
+
 def test_table_name_eks_audit(athena_backend):
 
     assert (
@@ -204,6 +212,7 @@ def test_table_name_eks_audit(athena_backend):
             """SELECT * FROM amazon_security_lake_table_eu_west_2_eks_audit_2_0 WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'valueb'"""
         ]
     )
+
 
 def test_table_name_no_region_set():
     pipeline = athena_pipeline_security_lake_table_name()

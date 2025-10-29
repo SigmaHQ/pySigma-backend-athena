@@ -18,7 +18,7 @@ Issues = "https://github.com/nsmithuk/pySigma-backend-athena/issues"
 Source = "https://github.com/nsmithuk/pySigma-backend-athena"
 
 [tool.poetry]
-version = "0.1.4"
+version = "0.1.5"
 repository = "https://github.com/nsmithuk/pySigma-backend-athena"
 readme = "README.md"
 classifiers = [
@@ -37,7 +37,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pysigma = "1.0.0rc2"
+pysigma = { git = "https://github.com/SigmaHQ/pySigma.git", branch = "main" }
 
 [tool.poetry.group.dev.dependencies]
 defusedxml = "^0.7"
