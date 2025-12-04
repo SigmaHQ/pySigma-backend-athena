@@ -12,11 +12,13 @@ from sigma.conditions import (
 from sigma.conversion.base import TextQueryBackend
 from sigma.conversion.deferred import DeferredQueryExpression
 from sigma.conversion.state import ConversionState
+from sigma.modifiers import SigmaCaseSensitiveModifier
 from sigma.processing.pipeline import ProcessingPipeline
 from sigma.rule import SigmaRule
 from sigma.types import (
     SigmaCasedString,
     SigmaCompareExpression,
+    SigmaFieldReference,
     SigmaNumber,
     SigmaString,
     SpecialChars,
@@ -55,9 +57,13 @@ class athenaBaseBackend(TextQueryBackend):
 
         self._default_table_name: str = backend_options.get("table") or "<TABLE>"
 
-        self._element_at_fields: list[str] = backend_options.get("element_at_fields") or []
+        self._element_at_fields: list[str] = (
+            backend_options.get("element_at_fields") or []
+        )
         if isinstance(self._element_at_fields, str):
-            self._element_at_fields = [e.strip() for e in self._element_at_fields.split(",")]
+            self._element_at_fields = [
+                e.strip() for e in self._element_at_fields.split(",")
+            ]
 
     # ----------------------------------------------------------------------------------------------------------
     # General Setup
@@ -103,10 +109,10 @@ class athenaBaseBackend(TextQueryBackend):
     bool_values: ClassVar[Dict[bool, str]] = {True: "true", False: "false"}
 
     # String matching expressions
-    startswith_expression: ClassVar[str] = "LOWER({field}) LIKE '{value}%'"
-    endswith_expression: ClassVar[str] = "LOWER({field}) LIKE '%{value}'"
-    contains_expression: ClassVar[str] = "LOWER({field}) LIKE '%{value}%'"
-    wildcard_match_expression: ClassVar[str] = "LOWER({field}) LIKE {value}"
+    startswith_expression: ClassVar[str] = r"LOWER({field}) LIKE '{value}%' ESCAPE '\'"
+    endswith_expression: ClassVar[str] = r"LOWER({field}) LIKE '%{value}' ESCAPE '\'"
+    contains_expression: ClassVar[str] = r"LOWER({field}) LIKE '%{value}%' ESCAPE '\'"
+    wildcard_match_expression: ClassVar[str] = r"LOWER({field}) LIKE {value} ESCAPE '\'"
 
     # Regular expression handling
     re_expression: ClassVar[str] = "REGEXP_LIKE({field}, '{regex}')"
@@ -117,9 +123,15 @@ class athenaBaseBackend(TextQueryBackend):
 
     # Case-sensitive string matching
     case_sensitive_match_expression: ClassVar[str] = "{field} = {value}"
-    case_sensitive_startswith_expression: ClassVar[str] = "{field} LIKE '{value}%'"
-    case_sensitive_endswith_expression: ClassVar[str] = "{field} LIKE '%{value}'"
-    case_sensitive_contains_expression: ClassVar[str] = "{field} LIKE '%{value}%'"
+    case_sensitive_startswith_expression: ClassVar[str] = (
+        r"{field} LIKE '{value}%' ESCAPE '\'"
+    )
+    case_sensitive_endswith_expression: ClassVar[str] = (
+        r"{field} LIKE '%{value}' ESCAPE '\'"
+    )
+    case_sensitive_contains_expression: ClassVar[str] = (
+        r"{field} LIKE '%{value}%' ESCAPE '\'"
+    )
 
     # Numeric comparison operators
     compare_op_expression: ClassVar[str] = "{field} {operator} {value}"
@@ -164,37 +176,32 @@ class athenaBaseBackend(TextQueryBackend):
     def convert_condition_field_eq_val_str(
         self, cond: ConditionFieldEqualsValueExpression, state: ConversionState
     ) -> Union[str, DeferredQueryExpression]:
-        """
-        Convert a field-equals-value string condition, handling wildcards appropriately.
-
-        Args:
-            cond: The condition to convert.
-            state: Current conversion state.
-
-        Returns:
-            The converted query string or deferred expression.
-        """
         result = super().convert_condition_field_eq_val_str(cond, state)
+        return self.fix_wildcard_quotes(cond, result)
 
-        def replace_end(s, old, new):
-            if s.endswith(old):
-                return s[: -len(old)] + new
-            return s
+    def convert_condition_field_eq_val_str_case_sensitive(
+        self, cond: ConditionFieldEqualsValueExpression, state: ConversionState
+    ) -> Union[str, DeferredQueryExpression]:
+        result = super().convert_condition_field_eq_val_str_case_sensitive(cond, state)
+        return self.fix_wildcard_quotes(cond, result)
 
+    def fix_wildcard_quotes(
+        self, cond: ConditionFieldEqualsValueExpression, value: str
+    ):
         # We need to deal with the issue that wildcarded values come pre-quoted.
         if cond.value.startswith(SpecialChars.WILDCARD_MULTI) and cond.value.endswith(
             SpecialChars.WILDCARD_MULTI
         ):
             # Tidy up: '%'valueB'%'
-            result = replace_end(result, "'%'", "%'").replace(" '%'", " '%")
+            return re.sub(r"'%'(.+)'%'", r"'%\1%'", value)
         elif cond.value.startswith(SpecialChars.WILDCARD_MULTI):
             # Tidy up: '%'valueD''
-            result = result.replace("''", "'").replace("%'", "%")
+            return value.replace("''", "'").replace("%'", "%")
         elif cond.value.endswith(SpecialChars.WILDCARD_MULTI):
             # Tidy up: ''valueC'%'
-            result = result.replace("''", "'").replace("'%", "%")
+            return value.replace("''", "'").replace("'%", "%")
 
-        return result
+        return value
 
     def escape_and_quote_field(self, field_name: str) -> str:
         """
@@ -214,7 +221,7 @@ class athenaBaseBackend(TextQueryBackend):
 
         # We need to support accessing map<string,string> fields (although we'll only support them at the top level).
         if parts[0] in self._element_at_fields:
-            return f'''element_at({parts[0]}, '{".".join(parts[1:])}')'''
+            return f"""element_at({parts[0]}, '{".".join(parts[1:])}')"""
 
         escaped_and_quoted_parts: list[str] = []
 
@@ -275,54 +282,22 @@ class athenaBaseBackend(TextQueryBackend):
             ),
         )
 
-    def decide_convert_condition_as_in_expressionX(
-        self, cond: Union[ConditionOR, ConditionAND], state: ConversionState
-    ) -> bool:
-        """
-        Determine if an OR or AND condition should be converted to an IN expression.
+    def convert_condition_field_eq_field(
+        self, cond: ConditionFieldEqualsValueExpression, state: ConversionState
+    ) -> Union[str, DeferredQueryExpression]:
+        """Conversion of comparision of two fields."""
+        cond_value = cond.value
+        if not isinstance(cond_value, SigmaFieldReference):
+            raise TypeError(
+                "Expected SigmaFieldReference for cond.value, got {type(cond_value)}"
+            )
 
-        Args:
-            cond: The condition to evaluate.
-            state: Current conversion state.
+        if SigmaCaseSensitiveModifier in cond.parent.modifiers:
+            raise NotImplementedError(
+                "cased is not support with fieldref for this backend at present"
+            )
 
-        Returns:
-            True if the condition should be converted to an IN expression, False otherwise.
-        """
-        is_cased_str = all(
-            [isinstance(arg.value, SigmaCasedString) for arg in cond.args]
-        )
-
-        if (
-            not self.convert_or_as_in
-            and isinstance(cond, ConditionOR)
-            and not is_cased_str
-        ) or (not self.convert_and_as_in and isinstance(cond, ConditionAND)):
-            return False
-
-        if not all(
-            (isinstance(arg, ConditionFieldEqualsValueExpression) for arg in cond.args)
-        ):
-            return False
-
-        fields = {arg.field for arg in cond.args}
-        if len(fields) != 1:
-            return False
-
-        if not all(
-            [isinstance(arg.value, (SigmaString, SigmaNumber)) for arg in cond.args]
-        ):
-            return False
-
-        if not self.in_expressions_allow_wildcards and any(
-            [
-                arg.value.contains_special()
-                for arg in cond.args
-                if isinstance(arg.value, SigmaString)
-            ]
-        ):
-            return False
-
-        return True
+        return super().convert_condition_field_eq_field(cond, state)
 
     def athena_finalize_query_default(
         self, rule: SigmaRule, query: str, state: ConversionState
@@ -340,15 +315,17 @@ class athenaBaseBackend(TextQueryBackend):
             The finalized Athena query string.
         """
 
-        table_name = state.processing_state.get("table_name") or self._default_table_name
+        table_name = (
+            state.processing_state.get("table_name") or self._default_table_name
+        )
 
         # ---
 
         select_fields = rule.fields or ["*"]
 
-        formatted_select_fields: str = ", ".join([
-            self._format_select_field(s) for s in select_fields
-        ])
+        formatted_select_fields: str = ", ".join(
+            [self._format_select_field(s) for s in select_fields]
+        )
 
         # ---
 

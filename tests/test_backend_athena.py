@@ -7,9 +7,7 @@ from sigma.backends.athena import athenaBackend
 
 @pytest.fixture
 def athena_backend():
-    return athenaBackend(
-        element_at_fields = ["unmapped"]
-    )
+    return athenaBackend(element_at_fields=["unmapped"])
 
 
 def test_athena_and_expression(athena_backend: athenaBackend):
@@ -142,7 +140,7 @@ def test_athena_in_expression(athena_backend: athenaBackend):
             )
         )
         == [
-            "SELECT * FROM <TABLE> WHERE LOWER(fieldA) = 'valuea' OR LOWER(fieldA) = 'valueb' OR LOWER(fieldA) LIKE 'valuec%' OR LOWER(fieldA) LIKE '%valued'"
+            r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) = 'valuea' OR LOWER(fieldA) = 'valueb' OR LOWER(fieldA) LIKE 'valuec%' ESCAPE '\' OR LOWER(fieldA) LIKE '%valued' ESCAPE '\'"
         ]
     )
 
@@ -188,7 +186,7 @@ def test_athena_cidr_query(athena_backend: athenaBackend):
         """
             )
         )
-        == ["SELECT * FROM <TABLE> WHERE LOWER(field) LIKE '192.168.%'"]
+        == [r"SELECT * FROM <TABLE> WHERE LOWER(field) LIKE '192.168.%' ESCAPE '\'"]
     )
 
 
@@ -230,7 +228,7 @@ def test_athena_single_wildcard(athena_backend: athenaBackend):
         """
             )
         )
-        == ["SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE 'val_e'"]
+        == [r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE 'val_e' ESCAPE '\'"]
     )
 
 
@@ -256,6 +254,29 @@ def test_athena_escaped_wildcard(athena_backend: athenaBackend):
     # The `*` is interpreted literally; in Athena the * is not treated as a wildcard in LIKE or ILIKE.
 
 
+def test_athena_contains_percent(athena_backend: athenaBackend):
+    assert (
+        athena_backend.convert(
+            SigmaCollection.from_yaml(
+                """
+            title: Test Contains Modifier
+            status: test
+            logsource:
+                category: test_category
+                product: test_product
+            detection:
+                sel:
+                    fieldA|contains: sub%String
+                condition: sel
+        """
+            )
+        )
+        == [
+            r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%sub\%string%' ESCAPE '\'"
+        ]
+    )
+
+
 def test_athena_contains_modifier(athena_backend: athenaBackend):
     assert (
         athena_backend.convert(
@@ -268,12 +289,14 @@ def test_athena_contains_modifier(athena_backend: athenaBackend):
                 product: test_product
             detection:
                 sel:
-                    fieldA|contains: subString
+                    fieldA|contains: sub_String
                 condition: sel
         """
             )
         )
-        == ["SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%substring%'"]
+        == [
+            r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%sub\_string%' ESCAPE '\'"
+        ]
     )
 
 
@@ -294,7 +317,7 @@ def test_athena_startswith_modifier(athena_backend: athenaBackend):
         """
             )
         )
-        == ["SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE 'prefix%'"]
+        == [r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE 'prefix%' ESCAPE '\'"]
     )
 
 
@@ -315,7 +338,7 @@ def test_athena_endswith_modifier(athena_backend: athenaBackend):
         """
             )
         )
-        == ["SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%suffix'"]
+        == [r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%suffix' ESCAPE '\'"]
     )
 
 
@@ -364,7 +387,7 @@ def test_athena_contains_all_modifier(athena_backend: athenaBackend):
             )
         )
         == [
-            "SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%value1%' AND LOWER(fieldA) LIKE '%value2%'"
+            r"SELECT * FROM <TABLE> WHERE LOWER(fieldA) LIKE '%value1%' ESCAPE '\' AND LOWER(fieldA) LIKE '%value2%' ESCAPE '\'"
         ]
     )
 
@@ -478,7 +501,7 @@ def test_athena_complex_combination(athena_backend: athenaBackend):
             )
         )
         == [
-            "SELECT * FROM <TABLE> WHERE REGEXP_LIKE(fieldA, 'Foo.*bar') AND LOWER(fieldB) LIKE '%baz%' OR LOWER(fieldC) LIKE '10.%' AND LOWER(fieldD) LIKE '%suffix'"
+            r"SELECT * FROM <TABLE> WHERE REGEXP_LIKE(fieldA, 'Foo.*bar') AND LOWER(fieldB) LIKE '%baz%' ESCAPE '\' OR LOWER(fieldC) LIKE '10.%' ESCAPE '\' AND LOWER(fieldD) LIKE '%suffix' ESCAPE '\'"
         ]
     )
 
@@ -548,6 +571,7 @@ def test_athena_special_characters_dots_in_field_name(athena_backend: athenaBack
         ]
     )
 
+
 def test_athena_element_at_in_field_name(athena_backend: athenaBackend):
     assert (
         athena_backend.convert(
@@ -570,6 +594,7 @@ def test_athena_element_at_in_field_name(athena_backend: athenaBackend):
             """SELECT * FROM <TABLE> WHERE LOWER(element_at(unmapped, 'serviceEventDetails.account_id')) = 'value'"""
         ]
     )
+
 
 def test_athena_empty_value(athena_backend: athenaBackend):
     assert (

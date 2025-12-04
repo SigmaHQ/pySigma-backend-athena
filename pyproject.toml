@@ -18,17 +18,17 @@ Issues = "https://github.com/nsmithuk/pySigma-backend-athena/issues"
 Source = "https://github.com/nsmithuk/pySigma-backend-athena"
 
 [tool.poetry]
-version = "0.1.4"
+version = "0.2.0"
 repository = "https://github.com/nsmithuk/pySigma-backend-athena"
 readme = "README.md"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 packages = [
@@ -36,8 +36,8 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-pysigma = "^0.11.22"
+python = "^3.10"
+pysigma = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 defusedxml = "^0.7"

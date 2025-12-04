@@ -217,16 +217,7 @@ class athenaBackend(athenaBaseBackend):
                 queries=self.correlation_search_multi_rule_query_expression_joiner.join(
                     (
                         self.correlation_search_multi_rule_query_expression.format(
-                            # rule=rule_reference.rule,
-                            # ruleid=rule_reference.rule.name or rule_reference.rule.id,
-                            queryx=self.convert_correlation_search_multi_rule_query_postprocess(
-                                query
-                            ),
                             query=self.athena_finalize_query_default(rule_reference.rule, query, rule_reference.rule.get_conversion_states()[0])
-                            # normalization=self.convert_correlation_search_field_normalization_expression(
-                            #     rule.aliases,
-                            #     rule_reference,
-                            # ),
                         )
                         for rule_reference in rule.rules
                         for query in rule_reference.rule.get_conversion_result()
