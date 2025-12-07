@@ -1,5 +1,5 @@
 ![Tests](https://github.com/nsmithuk/pySigma-backend-athena/actions/workflows/test.yml/badge.svg)
-![Coverage Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/nsmithuk/b932f78b1023d303a0ebf37e6a27f405/raw/9966c79f1f0e377f22c01aecde581ccb63df4c07/pySigma-backend-athena.json)
+![Coverage Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/nsmithuk/b932f78b1023d303a0ebf37e6a27f405/raw/pySigma-backend-athena.json)
 ![Status](https://img.shields.io/badge/Status-pre--release-orange)
 
 # pySigma Athena Backend
