@@ -23,13 +23,13 @@ def test_athena_and_expression(athena_backend: athenaBackend):
             detection:
                 sel:
                     fieldA: valueA
-                    fieldB: valueB
+                    fieldB: value_B
                 condition: sel
         """
             )
         )
         == [
-            "SELECT * FROM <TABLE> WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'valueb'"
+            "SELECT * FROM <TABLE> WHERE LOWER(fieldA) = 'valuea' AND LOWER(fieldB) = 'value_b'"
         ]
     )
 

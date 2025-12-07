@@ -19,7 +19,6 @@ from sigma.types import (
     SigmaCasedString,
     SigmaCompareExpression,
     SigmaFieldReference,
-    SigmaNumber,
     SigmaString,
     SpecialChars,
 )
@@ -176,12 +175,24 @@ class athenaBaseBackend(TextQueryBackend):
     def convert_condition_field_eq_val_str(
         self, cond: ConditionFieldEqualsValueExpression, state: ConversionState
     ) -> Union[str, DeferredQueryExpression]:
+        # We track if the string contains special characters here as we need that info in `convert_value_str`,
+        # but don't have access to the original string at that point.
+        state.processing_state["contains_special"] = (
+            isinstance(cond.value, SigmaString) and cond.value.contains_special()
+        )
+
         result = super().convert_condition_field_eq_val_str(cond, state)
         return self.fix_wildcard_quotes(cond, result)
 
     def convert_condition_field_eq_val_str_case_sensitive(
         self, cond: ConditionFieldEqualsValueExpression, state: ConversionState
     ) -> Union[str, DeferredQueryExpression]:
+        # We track if the string contains special characters here as we need that info in `convert_value_str`,
+        # but don't have access to the original string at that point.
+        state.processing_state["contains_special"] = (
+            isinstance(cond.value, SigmaString) and cond.value.contains_special()
+        )
+
         result = super().convert_condition_field_eq_val_str_case_sensitive(cond, state)
         return self.fix_wildcard_quotes(cond, result)
 
@@ -241,9 +252,25 @@ class athenaBaseBackend(TextQueryBackend):
         Returns:
             The converted string value.
         """
-        converted = super().convert_value_str(s, state)
+        # Check if the SigmaString originally contained special characters.
+        # If so we need to escape the wildcard characters
+        escape_wildcards = state.processing_state.get("contains_special", False)
+
+        """Convert a SigmaString into a plain string which can be used in query."""
+        converted = s.convert(
+            self.escape_char,
+            self.wildcard_multi if escape_wildcards else "",
+            self.wildcard_single if escape_wildcards else "",
+            self.str_quote + self.add_escaped,
+            self.filter_chars,
+        )
+
+        if self.decide_string_quoting(s):
+            converted = self.quote_string(converted)
+
         if not isinstance(s, SigmaCasedString):
             converted = converted.casefold()
+
         return converted
 
     def convert_condition_as_in_expression(

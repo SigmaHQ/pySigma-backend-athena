@@ -106,7 +106,9 @@ class athenaBackend(athenaBaseBackend):
     #   Usually the expression must contain some an expression that marks the matched event type as
     #   such, e.g. by using the rule name or uuid.
     # * A joiner string that is put between each search_multi_rule_query_expression:
-    correlation_search_multi_rule_query_expression_joiner: ClassVar[Optional[str]] = " UNION ALL "
+    correlation_search_multi_rule_query_expression_joiner: ClassVar[Optional[str]] = (
+        " UNION ALL "
+    )
 
     ## Correlation query aggregation phase
     # All of the following class variables are dictionaries of mappings from
@@ -213,18 +215,22 @@ class athenaBackend(athenaBaseBackend):
         rule: SigmaCorrelationRule,
         **kwargs,
     ) -> str:
-            return self.correlation_search_multi_rule_expression.format(
-                queries=self.correlation_search_multi_rule_query_expression_joiner.join(
-                    (
-                        self.correlation_search_multi_rule_query_expression.format(
-                            query=self.athena_finalize_query_default(rule_reference.rule, query, rule_reference.rule.get_conversion_states()[0])
+        return self.correlation_search_multi_rule_expression.format(
+            queries=self.correlation_search_multi_rule_query_expression_joiner.join(
+                (
+                    self.correlation_search_multi_rule_query_expression.format(
+                        query=self.athena_finalize_query_default(
+                            rule_reference.rule,
+                            query,
+                            rule_reference.rule.get_conversion_states()[0],
                         )
-                        for rule_reference in rule.rules
-                        for query in rule_reference.rule.get_conversion_result()
                     )
-                ),
-                **kwargs,
-            )
+                    for rule_reference in rule.rules
+                    for query in rule_reference.rule.get_conversion_result()
+                )
+            ),
+            **kwargs,
+        )
 
     # Implementation of the aggregation phase of the correlation query.
     def convert_correlation_aggregation_from_template(

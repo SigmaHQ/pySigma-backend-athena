@@ -29,7 +29,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: poetry run python print-coverage.py >> $GITHUB_ENV
       - name: Create coverage badge
-        if: ${{ github.repository == 'nsmithuk/pySigma-backend-athena' && github.event_name == 'push' && runner.os == 'Linux' }}
+        if: ${{ github.repository == 'SigmaHQ/pySigma-backend-athena' && github.event_name == 'push' && runner.os == 'Linux' }}
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}

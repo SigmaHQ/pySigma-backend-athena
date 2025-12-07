@@ -1,8 +1,15 @@
-from sigma.pipelines.base import Pipeline
-from sigma.processing.conditions import LogsourceCondition
-from sigma.processing.pipeline import ProcessingItem, ProcessingPipeline, SigmaRule, PreprocessingTransformation
 from dataclasses import dataclass, field
 from typing import Dict
+
+from sigma.pipelines.base import Pipeline
+from sigma.processing.conditions import LogsourceCondition
+from sigma.processing.pipeline import (
+    PreprocessingTransformation,
+    ProcessingItem,
+    ProcessingPipeline,
+    SigmaRule,
+)
+
 
 @dataclass
 class SetStateFromBackendOptionsTransformation(PreprocessingTransformation):
@@ -29,8 +36,11 @@ class SetStateFromBackendOptionsTransformation(PreprocessingTransformation):
                 f"You likely need to set the key '{missing_key}' via 'backend options'."
             ) from e
 
+
 @dataclass
-class SetStateFromBackendOptionsTransformationDashToUnderscore(SetStateFromBackendOptionsTransformation):
+class SetStateFromBackendOptionsTransformationDashToUnderscore(
+    SetStateFromBackendOptionsTransformation
+):
     def apply(self, rule: SigmaRule) -> None:
         # First, compute the value via the parent
         super().apply(rule)
@@ -39,17 +49,42 @@ class SetStateFromBackendOptionsTransformationDashToUnderscore(SetStateFromBacke
         pipeline = self._pipeline
         pipeline.state[self.key] = pipeline.state[self.key].replace("-", "_")
 
+
 @Pipeline
 def athena_pipeline_security_lake_table_name() -> ProcessingPipeline:
     sources = [
-        (LogsourceCondition(product="aws", service="cloudtrail"), "amazon_security_lake_table_{backend_aws_table_region}_cloud_trail_mgmt_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="cloudtrail_s3"), "amazon_security_lake_table_{backend_aws_table_region}_s3_data_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="cloudtrail_lambda"), "amazon_security_lake_table_{backend_aws_table_region}_lambda_execution_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="route53"), "amazon_security_lake_table_{backend_aws_table_region}_route53_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="security_hub"), "amazon_security_lake_table_{backend_aws_table_region}_sh_findings_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="vpc_flow_logs"), "amazon_security_lake_table_{backend_aws_table_region}_vpc_flow_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="waf"), "amazon_security_lake_table_{backend_aws_table_region}_waf_{backend_aws_table_version}"),
-        (LogsourceCondition(product="aws", service="eks_audit"), "amazon_security_lake_table_{backend_aws_table_region}_eks_audit_{backend_aws_table_version}"),
+        (
+            LogsourceCondition(product="aws", service="cloudtrail"),
+            "amazon_security_lake_table_{backend_aws_table_region}_cloud_trail_mgmt_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="cloudtrail_s3"),
+            "amazon_security_lake_table_{backend_aws_table_region}_s3_data_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="cloudtrail_lambda"),
+            "amazon_security_lake_table_{backend_aws_table_region}_lambda_execution_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="route53"),
+            "amazon_security_lake_table_{backend_aws_table_region}_route53_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="security_hub"),
+            "amazon_security_lake_table_{backend_aws_table_region}_sh_findings_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="vpc_flow_logs"),
+            "amazon_security_lake_table_{backend_aws_table_region}_vpc_flow_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="waf"),
+            "amazon_security_lake_table_{backend_aws_table_region}_waf_{backend_aws_table_version}",
+        ),
+        (
+            LogsourceCondition(product="aws", service="eks_audit"),
+            "amazon_security_lake_table_{backend_aws_table_region}_eks_audit_{backend_aws_table_version}",
+        ),
     ]
 
     return ProcessingPipeline(

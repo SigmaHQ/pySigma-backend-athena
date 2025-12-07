@@ -3,7 +3,7 @@ name = "pySigma-backend-athena"
 dynamic = [ "version", "classifiers" ]
 description = "pySigma athena backend"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["sigma", "pySigma", "athena", "aws"]
 authors = [
@@ -46,6 +46,9 @@ pytest-cov = "^6.1.1"
 coverage = "^7.8.0"
 black = "^25.1.0"
 isort = "^6.0.1"
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["poetry-core>=1.8.1"]
